@@ -38,10 +38,10 @@ public JournalEntry createEntry(@RequestBody JournalEntry myentry){
 }
 
 
-    @GetMapping("/addById/{d_Id}")
-    public JournalEntry getbyId(@PathVariable ObjectId myId){
+    @GetMapping("/id/{d_Id}")
+    public JournalEntry getbyId(@PathVariable ObjectId d_Id){
         // bcoz in service optional is like box where data may present or not if present give date else return null
-        return journalEntryService.findById(myId).orElse(null);
+        return journalEntryService.findById(d_Id).orElse(null);
         
     }
 
