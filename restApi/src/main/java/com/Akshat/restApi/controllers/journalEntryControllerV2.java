@@ -4,8 +4,12 @@ import java.time.LocalDateTime;
 // import java.util.ArrayList;
 import java.util.List;
 
+import java.util.Optional;
+
 import org.bson.types.ObjectId;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -20,49 +24,62 @@ import com.Akshat.restApi.service.JournalEntryService;
 @RestController
 @RequestMapping("/journal")
 public class journalEntryControllerV2 {
-    
+
     @Autowired
     private JournalEntryService journalEntryService;
- 
 
     @GetMapping("/getAll")
-    public List<JournalEntry> getAll(){
-        return journalEntryService.getAll();
+    public ResponseEntity<?> getAll() {
+        List<JournalEntry> li= journalEntryService.getAll();
+        if(li !=null && !li.isEmpty()){
+            return new ResponseEntity<>(li, HttpStatus.OK);
+        }
+        return new ResponseEntity<>(HttpStatus.NOT_FOUND);
     }
 
    @PostMapping("/add")
-public JournalEntry createEntry(@RequestBody JournalEntry myentry){
-    myentry.setDate(LocalDateTime.now());
+public ResponseEntity<JournalEntry> createEntry(@RequestBody JournalEntry myentry){
+    try{
+         myentry.setDate(LocalDateTime.now());
    journalEntryService.saveEntry(myentry);
-   return null;  // return the created entry
+   return new ResponseEntity<>(myentry,HttpStatus.CREATED);  // return the created entry
+    }
+   catch(Exception e){
+       return new ResponseEntity<>(HttpStatus.BAD_REQUEST);
+   }
+
+  
 }
 
-
     @GetMapping("/id/{d_Id}")
-    public JournalEntry getbyId(@PathVariable ObjectId d_Id){
-        // bcoz in service optional is like box where data may present or not if present give date else return null
-        return journalEntryService.findById(d_Id).orElse(null);
-        
+    public ResponseEntity<JournalEntry> getbyId(@PathVariable ObjectId d_Id) {
+        Optional<JournalEntry> journalentry = journalEntryService.findById(d_Id);
+
+        if (journalentry.isPresent()) {
+            return new ResponseEntity<>(journalentry.get(), HttpStatus.OK);
+        }
+        return new ResponseEntity<>(null, HttpStatus.NOT_FOUND);
     }
 
     @DeleteMapping("/delete/{d_id}")
-    public boolean deleteJournalEntryById(@PathVariable ObjectId d_id){
+    public ResponseEntity<?> deleteJournalEntryById(@PathVariable ObjectId d_id) {
         journalEntryService.deleteById(d_id);
-        return true;
+        return new ResponseEntity<>(HttpStatus.NO_CONTENT);
     }
 
     @PutMapping("/update/{d_id}")
-    public JournalEntry updJournalEntry(@PathVariable ObjectId d_id,@RequestBody JournalEntry myentry){
-        JournalEntry old=journalEntryService.findById(d_id).orElse(null);
-        if(old!=null){
-            old.setTitle(myentry.getTitle()!=null && !myentry.equals("")?myentry.getTitle():old.getTitle());
-            old.setContent(myentry.getContent()!=null && !myentry.equals("")? myentry.getContent():old.getContent());
-            // content send toh title as it and if title sent then content as it 
+    public ResponseEntity<?> updJournalEntry(@PathVariable ObjectId d_id, @RequestBody JournalEntry myentry) {
+        JournalEntry old = journalEntryService.findById(d_id).orElse(null);
+        if (old != null) {
+            old.setTitle(myentry.getTitle() != null && !myentry.equals("") ? myentry.getTitle() : old.getTitle());
+            old.setContent(
+                    myentry.getContent() != null && !myentry.equals("") ? myentry.getContent() : old.getContent());
+            // content send toh title as it and if title sent then content as it
+             journalEntryService.saveEntry(old);
+        return new ResponseEntity<>(old,HttpStatus.OK);
         }
-        journalEntryService.saveEntry(old);
-        return old;
-        
+       return new ResponseEntity<>(old,HttpStatus.NOT_FOUND);
+
     }
-    
-    
+
 }
